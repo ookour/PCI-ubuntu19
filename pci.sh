@@ -10,7 +10,9 @@ echo "install udf /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
 
 
-sudo dpkg --configure -a
+debconf-set-selections <<< "postfix postfix/mailname string your.hostname.com"
+debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+apt-get install -y postfix
 apt-get install -y aide
 aideinit -y
 
@@ -29,7 +31,7 @@ cat templates/motd-CIS > /etc/issue.net
 
 
 
-apt-get remove telnet
+apt-get remove -y telnet
 
 
 
