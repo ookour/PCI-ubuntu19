@@ -11,8 +11,8 @@ echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
 
 
 
-#apt-get install -y aide
-#aideinit -y
+apt-get install -y aide
+aideinit -y
 
 
 
