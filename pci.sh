@@ -10,7 +10,7 @@ echo "install udf /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
 
 
-
+sudo dpkg --configure -a
 apt-get install -y aide
 aideinit -y
 
