@@ -22,7 +22,23 @@ echo "* hard core 0" >> /etc/security/limits.conf
 cp templates/sysctl-CIS.conf /etc/sysctl.conf
 sysctl -e -p
 
+sysctl -w net.ipv4.conf.all.rp_filter=1
+sysctl -w net.ipv4.conf.default.rp_filter=1
+sysctl -w net.ipv4.route.flush=1
 
+
+sysctl -w net.ipv6.conf.all.accept_ra=0
+sysctl -w net.ipv6.conf.default.accept_ra=0
+sysctl -w net.ipv6.route.flush=1
+
+sysctl -w net.ipv6.conf.all.accept_redirects=0
+sysctl -w net.ipv6.conf.default.accept_redirects=0
+sysctl -w net.ipv6.route.flush=1
+
+
+
+chown root:root /boot/grub/grub.cfg
+chmod og-rwx /boot/grub/grub.cfg
 
 cat templates/motd-CIS > /etc/motd
 cat templates/motd-CIS > /etc/issue
@@ -47,10 +63,25 @@ echo "install sctp /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install rds /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install tipc /bin/true" >> /etc/modprobe.d/CIS.conf
 
-sh templates/iptables-CIS.sh
-cp templates/iptables-CIS.sh /etc/init.d/
-chmod +x /etc/init.d/iptables-CIS.sh
-ln -s /etc/init.d/iptables-CIS.sh /etc/rc2.d/S99iptables-CIS.sh
+#sh templates/iptables-CIS.sh
+#cp templates/iptables-CIS.sh /etc/init.d/
+#chmod +x /etc/init.d/iptables-CIS.sh
+#ln -s /etc/init.d/iptables-CIS.sh /etc/rc2.d/S99iptables-CIS.sh
+
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A INPUT -s 127.0.0.0/8 -j DROP
+
+iptables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT
 
 apt-get install -y auditd
 
@@ -75,14 +106,38 @@ echo "-e 2" >>/etc/audit/audit.rules
 
 cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules
 
+chmod -R g-wx,o-rwx /var/log/*
 
 
-
+rm /etc/cron.deny
+rm /etc/at.deny
 touch /etc/cron.allow
 touch /etc/at.allow
+chmod og-rwx /etc/cron.allow
+chmod og-rwx /etc/at.allow
+chown root:root /etc/cron.allow
+chown root:root /etc/at.allow
 
 
+chown root:root /etc/crontab
+chmod og-rwx /etc/crontab
 
+chown root:root /etc/cron.hourly
+chmod og-rwx /etc/cron.hourly
+
+chown root:root /etc/cron.daily
+chmod og-rwx /etc/cron.daily
+
+chown root:root /etc/cron.weekly
+chmod og-rwx /etc/cron.weekly
+
+
+chown root:root /etc/cron.monthly
+chmod og-rwx /etc/cron.monthly
+
+
+chown root:root /etc/cron.d
+chmod og-rwx /etc/cron.d
 
 cp templates/common-passwd-CIS /etc/pam.d/common-passwd
 cp templates/pwquality-CIS.conf /etc/security/pwquality.conf
@@ -103,3 +158,13 @@ usermod -g 0 root
 ## 
 cp templates/sshd_config-CIS /etc/ssh/sshd_config
 
+
+chown root:root /etc/ssh/sshd_config
+chmod og-rwx /etc/ssh/sshd_config
+
+
+echo "password requisite pam_pwquality.so retry=3" >> /etc/pam.d/common-password
+echo "password required pam_pwhistory.so remember=5" >> /etc/pam.d/common-password
+
+echo "umask 027" >> /etc/bash.bashrc
+echo "umask 027" >> /etc/profile

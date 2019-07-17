@@ -34,4 +34,4 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 UsePAM yes
 UseDNS no
 MaxStartups 2
-Banner /etc/motd
+Banner /etc/issue.net

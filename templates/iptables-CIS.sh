@@ -1,5 +1,5 @@
 #!/bin/bash
-iptables -F
+#iptables -F
 
 #Defaults
 
@@ -9,8 +9,8 @@ iptables -P OUTPUT ACCEPT
 
 #Rules for PSAD
 
-iptables -A INPUT -j LOG
-iptables -A FORWARD -j LOG
+#iptables -A INPUT -j LOG
+#iptables -A FORWARD -j LOG
 
 # INPUT
 
@@ -99,7 +99,7 @@ iptables -A FORWARD -m recent --name portscan --remove
 
 # smtp
 
-iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT
+#iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT
 
 # http
 
@@ -111,7 +111,7 @@ iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT
 
 # ssh & sftp
 
-#iptables -A INPUT -p tcp -m tcp --dport 372 -j ACCEPT
+iptables -I INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 
 
 
