@@ -175,3 +175,4 @@ chown root:root /boot/grub/grub.cfg
 chmod og-rwx /boot/grub/grub.cfg
 sed -i 's/inet_interfaces = all/inet_interfaces = loopback-only/g' /etc/postfix/main.cf
 apt-get remove telnet
+apt-get --purge -y remove telnet
