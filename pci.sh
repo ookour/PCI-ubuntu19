@@ -169,3 +169,4 @@ echo "password required pam_pwhistory.so remember=5" >> /etc/pam.d/common-passwo
 echo "umask 027" >> /etc/bash.bashrc
 echo "umask 027" >> /etc/profile'
 mount -o remount,noexec /dev/shm
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
