@@ -177,3 +177,4 @@ sed -i 's/inet_interfaces = all/inet_interfaces = loopback-only/g' /etc/postfix/
 systemctl restart postfix
 apt-get remove telnet
 apt-get --purge -y remove telnet
+chmod -R g-wx,o-rwx /var/log/*
