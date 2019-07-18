@@ -402,7 +402,7 @@ test_is_installed() {
     test_start_time=$(test_start $id)
 
     ## Tests Start ##
-    [ $(dpkg -q $pkg &>/dev/null; echo $?) -eq 0 ] && result="Pass"
+    [ $(dpkg -s aide &>/dev/null; echo $?) -eq 0 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -571,7 +571,7 @@ test_1.2.1() {
 
     ## Tests Start ##
     repolist=$(apt-cache policy 2>/dev/null)
-    [ $(echo "$repolist" | egrep -c '^base/7/') -ne 0 -a $(echo "$repolist" | egrep -c '^updates/7/') -ne 0 ] && result="Pass"
+    [ $(grep ^[^\#] /etc/apt/sources.list /etc/apt/sources.list.d/* | egrep -c deb) -ne 0 ] && result="Pass"
     ## Tests End
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -668,7 +668,7 @@ test_1.5.1() {
     state=0
     str='ExecStart=-/bin/sh -c "/usr/sbin/sulogin; /usr/bin/systemctl --fail --no-block default"'
 
-    [ "$(grep "hard core" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "* hard core 0" ] || state=1
+    [ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "* hard core 0" ] || [ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "grep: * hard core 0\n/etc/security/limits.d/*: No such file or directory" ] || state=1
     [ "$(sysctl fs.suid_dumpable)" == "fs.suid_dumpable = 0" ] || state=1
     [ "$(grep "fs.suid_dumpable" /etc/sysctl.conf /etc/sysctl.d/*.conf | sed 's/^.*://')" == "fs.suid_dumpable = 0" ] || state=1
     [ $state -eq 0 ] && result="Pass"
@@ -754,7 +754,7 @@ test_1.6.1.2() {
     ## Tests Start ##
     state=0
 
-    [ "$(apparmor_status)| awk 'FNR==1'" == "apparmor module is loaded." ] || state=1
+    [ "$(apparmor_status)"| awk 'FNR==1' == "apparmor module is loaded." ] || state=1
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
