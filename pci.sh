@@ -1,5 +1,5 @@
 #!/bin/bash
-
+:'
 echo "install cramfs /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install freevxfs /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install jffs2 /bin/true" >> /etc/modprobe.d/CIS.conf
@@ -167,4 +167,5 @@ echo "password requisite pam_pwquality.so retry=3" >> /etc/pam.d/common-password
 echo "password required pam_pwhistory.so remember=5" >> /etc/pam.d/common-password
 
 echo "umask 027" >> /etc/bash.bashrc
-echo "umask 027" >> /etc/profile
+echo "umask 027" >> /etc/profile'
+mount -o remount,noexec /dev/shm
