@@ -174,3 +174,4 @@ df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -typ
 chown root:root /boot/grub/grub.cfg
 chmod og-rwx /boot/grub/grub.cfg
 sed -i 's/inet_interfaces = all/inet_interfaces = loopback-only/g' /etc/postfix/main.cf
+apt-get remove telnet
