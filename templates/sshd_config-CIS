@@ -8,8 +8,9 @@ macs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@op
 KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256
 SyslogFacility AUTH
 ClientAliveCountMax 2
+ClientAliveInterval 300
 Compression no
-LogLevel VERBOSE
+LogLevel INFO
 MaxAuthTries 2
 MaxSessions 2
 LoginGraceTime 30
