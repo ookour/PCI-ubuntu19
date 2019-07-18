@@ -170,3 +170,6 @@ echo "umask 027" >> /etc/bash.bashrc
 echo "umask 027" >> /etc/profile'
 mount -o remount,noexec /dev/shm
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
+
+chown root:root /boot/grub/grub.cfg
+chmod og-rwx /boot/grub/grub.cfg
