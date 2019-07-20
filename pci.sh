@@ -1,5 +1,5 @@
 #!/bin/bash
-:'
+
 echo "install cramfs /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install freevxfs /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install jffs2 /bin/true" >> /etc/modprobe.d/CIS.conf
@@ -96,17 +96,17 @@ sed -i 's/GRUB_CMDLINE_LINUX="ipv6.disable=1"/GRUB_CMDLINE_LINUX="ipv6.disable=1
 
 cp templates/audit-CIS.rules /etc/audit/audit.rules
 
-find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print \
-"-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 \
--k privileged" } ' >> /etc/audit/audit.rules
+##find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print \
+##"-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 \
+##-k privileged" } ' >> /etc/audit/audit.rules
 
-echo " " >> /etc/audit/audit.rules
-echo "#End of Audit Rules" >> /etc/audit/audit.rules
-echo "-e 2" >>/etc/audit/audit.rules
+##echo " " >> /etc/audit/audit.rules
+##echo "#End of Audit Rules" >> /etc/audit/audit.rules
+##echo "-e 2" >>/etc/audit/audit.rules
 
-cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules
+##cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules
 
-chmod -R g-wx,o-rwx /var/log/*
+##chmod -R g-wx,o-rwx /var/log/*
 
 
 rm /etc/cron.deny
@@ -167,14 +167,17 @@ echo "password requisite pam_pwquality.so retry=3" >> /etc/pam.d/common-password
 echo "password required pam_pwhistory.so remember=5" >> /etc/pam.d/common-password
 
 echo "umask 027" >> /etc/bash.bashrc
-echo "umask 027" >> /etc/profile'
+echo "umask 027" >> /etc/profile
+
 mount -o remount,noexec /dev/shm
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
 
 chown root:root /boot/grub/grub.cfg
 chmod og-rwx /boot/grub/grub.cfg
 sed -i 's/inet_interfaces = all/inet_interfaces = loopback-only/g' /etc/postfix/main.cf
-systemctl restart postfix
 apt-get remove telnet
 apt-get --purge -y remove telnet
+apt-get install -y tcpd
 chmod -R g-wx,o-rwx /var/log/*
+
+echo "Hardining script is finished"
