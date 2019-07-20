@@ -443,7 +443,7 @@ test_perms() {
     file_g=$(echo $file_perms | cut -c4)
     file_o=$(echo $file_perms | cut -c5)
 
-    [ "$(ls -ld $file | awk '{ print $3" "$4 }')" == "root root" ] || state=1
+    [ "$(ls -ld $file | awk '{ print $3" "$4 }')" == "root root" ] || [ "$(ls -ld $file | awk '{ print $3" "$4 }')" == "root shadow" ] ||state=1
     [ $file_u -le $u ] || state=1
     [ $file_g -le $g ] || state=1
     [ $file_o -le $o ] || state=1
@@ -499,7 +499,7 @@ test_1.1.x-check_fs_opts() {
     test_start_time=$(test_start $id)
 
     ## Tests Start ##
-    mount | egrep "$partition .*,$fs_opt," &>/dev/null  && result="Pass"
+    mount | egrep "$partition .*,$fs_opt*" &>/dev/null  && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -668,7 +668,8 @@ test_1.5.1() {
     state=0
     str='ExecStart=-/bin/sh -c "/usr/sbin/sulogin; /usr/bin/systemctl --fail --no-block default"'
 
-    [ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "* hard core 0" ] || [ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "grep: * hard core 0\n/etc/security/limits.d/*: No such file or directory" ] || state=1
+    [ "$(grep "* hard core 0" /etc/security/limits.conf | sed 's/^.*://' )" == "* hard core 0" ] || state=1
+    #[ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "* hard core 0" ] || [ "$(grep "* hard core 0" /etc/security/limits.conf /etc/security/limits.d/* | sed 's/^.*://' )" == "grep: * hard core 0\n/etc/security/limits.d/*: No such file or directory" ] || state=1
     [ "$(sysctl fs.suid_dumpable)" == "fs.suid_dumpable = 0" ] || state=1
     [ "$(grep "fs.suid_dumpable" /etc/sysctl.conf /etc/sysctl.d/*.conf | sed 's/^.*://')" == "fs.suid_dumpable = 0" ] || state=1
     [ $state -eq 0 ] && result="Pass"
@@ -704,7 +705,8 @@ test_1.5.3() {
 
     ## Tests Start ##
     [ "$(sysctl kernel.randomize_va_space)" == "kernel.randomize_va_space = 2" ] || state=1
-    [ "$(grep "kernel\.randomize_va_space" /etc/sysctl.conf /etc/sysctl.d/* | sed 's/^.*://')" == "kernel.randomize_va_space = 2" ] || state=1
+    [ "$(grep "kernel\.randomize_va_space" /etc/sysctl.conf | sed 's/^.*://')" == "kernel.randomize_va_space = 2" ] || state=1
+    [ "$(grep "kernel\.randomize_va_space" /etc/sysctl.d/* | sed 's/^.*://')" == "kernel.randomize_va_space = 2" ] || state=1
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -754,7 +756,7 @@ test_1.6.1.2() {
     ## Tests Start ##
     state=0
 
-    [ "$(apparmor_status)"| awk 'FNR==1' == "apparmor module is loaded." ] || state=1
+    [ "$(apparmor_status | awk 'FNR==1')" == "apparmor module is loaded." ] || state=1
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -1205,10 +1207,12 @@ test_3.x-double() {
 
     ## Tests Start ##
     [ "$(sysctl net.$protocol.conf.all.$sysctl)" == "net.$protocol.conf.all.$sysctl = $val" ] || state=1
-    [ "$(grep "net.$protocol.conf.all.$sysctl" /etc/sysctl.conf /etc/sysctl.d/*.conf | sed 's/^.*://')" == "net.$protocol.conf.all.$sysctl = $val" ] || state=2
+    [ "$(grep "net.$protocol.conf.all.$sysctl" /etc/sysctl.conf | sed 's/^.*://')" == "net.$protocol.conf.all.$sysctl = $val" ] || state=2
+    [ "$(grep "net.$protocol.conf.all.$sysctl" /etc/sysctl.d/*.conf | sed 's/^.*://')" == "net.$protocol.conf.all.$sysctl = $val" ] || state=4
 
-    [ "$(sysctl net.$protocol.conf.default.$sysctl)" == "net.$protocol.conf.default.$sysctl = $val" ] || state=4
-    [ "$(grep "net.$protocol.conf.default.$sysctl" /etc/sysctl.conf /etc/sysctl.d/*.conf | sed 's/^.*://')" == "net.$protocol.conf.default.$sysctl = $val" ] || state=8
+    [ "$(sysctl net.$protocol.conf.default.$sysctl)" == "net.$protocol.conf.default.$sysctl = $val" ] || state=6
+    [ "$(grep "net.$protocol.conf.default.$sysctl" /etc/sysctl.conf  | sed 's/^.*://')" == "net.$protocol.conf.default.$sysctl = $val" ] || state=6
+    [ "$(grep "net.$protocol.conf.default.$sysctl" /etc/sysctl.d/*.conf | sed 's/^.*://')" == "net.$protocol.conf.default.$sysctl = $val" ] || state=8
 
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
@@ -1468,12 +1472,7 @@ test_4.1.4() {
 
     ## Tests Start ##
     search_term=time-change
-    expected='-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change\n
-        -a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -k time- change\n
-        -a always,exit -F arch=b64 -S clock_settime -k time-change\n
-        -a always,exit -F arch=b32 -S clock_settime -k time-change\n
-        -w /etc/localtime -p wa -k time-change'
-
+    expected='-a always,exit -F arch=b32 -S stime,settimeofday,adjtimex -F key=time-change\n-a always,exit -F arch=b64 -S clock_settime -F key=time-change\n-a always,exit -F arch=b32 -S clock_settime -F key=time-change\n-w /etc/localtime -p wa -k time-change'
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
 
@@ -1489,11 +1488,7 @@ test_4.1.5() {
 
     ## Tests Start ##
     search_term="identity"
-    expected='-w /etc/group -p wa -k identity\n
-        -w /etc/passwd -p wa -k identity\n
-        -w /etc/gshadow -p wa -k identity\n
-        -w /etc/shadow -p wa -k identity\n
-        -w /etc/security/opasswd -p wa -k identity'
+    expected='-w /etc/group -p wa -k identity\n-w /etc/passwd -p wa -k identity\n-w /etc/gshadow -p wa -k identity\n-w /etc/shadow -p wa -k identity\n-w /etc/security/opasswd -p wa -k identity'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1514,13 +1509,7 @@ test_4.1.6() {
     ##  so what we end up testing for here is not what is specified in the standard, but
     ##  is correct when used in real-world situations.
     search_term="system-locale"
-    expected='-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale\n
-        -a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale\n
-        -w /etc/issue -p wa -k system-locale\n
-        -w /etc/issue.net -p wa -k system-locale\n
-        -w /etc/hosts -p wa -k system-locale\n
-        -w /etc/network -p wa -k system-locale'
-
+    expected='-a always,exit -F arch=b32 -S sethostname,setdomainname -F key=system-locale\n-a always,exit -F arch=b64 -S sethostname,setdomainname -F key=system-locale\n-w /etc/issue -p wa -k system-locale\n-w /etc/issue.net -p wa -k system-locale\n-w /etc/hosts -p wa -k system-locale\n-w /etc/network -p wa -k system-locale\n-w /etc/networks -p wa -k system-locale'
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
 
@@ -1536,8 +1525,7 @@ test_4.1.7() {
 
     ## Tests Start ##
     search_term="MAC-policy"
-    expected='-w /etc/apparmor/ -p wa -k MAC-policy\n
-        -w /etc/apparmor.d/ -p wa -k MAC-policy'
+    expected='-w /etc/apparmor -p wa -k MAC-policy\n-w /etc/apparmor.d -p wa -k MAC-policy'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1554,10 +1542,7 @@ test_4.1.8() {
 
     ## Tests Start ##
     search_term="logins"
-    expected='-w /var/log/faillog -p wa -k logins\n
-        -w /var/log/lastlog -p wa -k logins\n
-        -w /var/log/tallylog -p wa -k logins'
-
+    expected='-w /var/log/faillog -p wa -k logins\n-w /var/log/lastlog -p wa -k logins\n-w /var/log/tallylog -p wa -k logins\n-w /var/log/wtmp -p wa -k logins\n-w /var/log/btmp -p wa -k logins'
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
 
@@ -1590,13 +1575,7 @@ test_4.1.10() {
 
     ## Tests Start ##
     search_term="perm_mod"
-    expected='-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n
-        -a always,exit -F arch=b32 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n
-        -a always,exit -F arch=b64 -S chown,fchown,lchown,fchownat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n
-        -a always,exit -F arch=b32 -S lchown,fchown,chown,fchownat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n
-        -a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod\n
-        -a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod'
-
+    expected='-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n-a always,exit -F arch=b32 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n-a always,exit -F arch=b64 -S chown,fchown,lchown,fchownat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n-a always,exit -F arch=b32 -S lchown,fchown,chown,fchownat -F auid>=1000 -F auid!=-1 -F key=perm_mod\n-a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod\n-a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod'
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
 
@@ -1612,10 +1591,7 @@ test_4.1.11() {
 
     ## Tests Start ##
     search_term="access"
-    expected='-a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat -F exit=-EACCES -F auid>=1000 -F auid!=-1 -F key=access\n
-        -a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat -F exit=-EACCES -F auid>=1000 -F auid!=-1 -F key=access\n
-        -a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat -F exit=-EPERM -F auid>=1000 -F auid!=-1 -F key=access\n
-        -a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat -F exit=-EPERM -F auid>=1000 -F auid!=-1 -F key=access'
+    expected='-a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat -F exit=-EACCES -F auid>=1000 -F auid!=-1 -F key=access\n-a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat -F exit=-EACCES -F auid>=1000 -F auid!=-1 -F key=access\n-a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat -F exit=-EPERM -F auid>=1000 -F auid!=-1 -F key=access\n-a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat -F exit=-EPERM -F auid>=1000 -F auid!=-1 -F key=access'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1632,8 +1608,7 @@ test_4.1.13() {
 
     ## Tests Start ##
     search_term="mounts"
-    expected='-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=-1 -F key=mounts\n
-        -a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=-1 -F key=mounts'
+    expected='-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=-1 -F key=mounts\n-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=-1 -F key=mounts'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1650,8 +1625,7 @@ test_4.1.14() {
 
     ## Tests Start ##
     search_term="key=delete"
-    expected='-a always,exit -F arch=b64 -S rename,unlink,unlinkat,renameat -F auid>=1000 -F auid!=-1 -F key=delete\n
-        -a always,exit -F arch=b32 -S unlink,rename,unlinkat,renameat -F auid>=1000 -F auid!=-1 -F key=delete'
+    expected='-a always,exit -F arch=b64 -S rename,unlink,unlinkat,renameat -F auid>=1000 -F auid!=-1 -F key=delete\n-a always,exit -F arch=b32 -S unlink,rename,unlinkat,renameat -F auid>=1000 -F auid!=-1 -F key=delete'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1668,8 +1642,7 @@ test_4.1.15() {
 
     ## Tests Start ##
     search_term="scope"
-    expected='-w /etc/sudoers -p wa -k scope\n
-        -w /etc/sudoers.d -p wa -k scope'
+    expected='-w /etc/sudoers -p wa -k scope\n-w /etc/sudoers.d -p wa -k scope'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1703,10 +1676,7 @@ test_4.1.17() {
 
     ## Tests Start ##
     search_term="modules"
-    expected='-w /sbin/insmod -p x -k modules\n
-        -w /sbin/rmmod -p x -k modules\n
-        -w /sbin/modprobe -p x -k modules\n
-        -a always,exit -F arch=b64 -S init_module,delete_module -F key=modules'
+    expected='-w /sbin/insmod -p x -k modules\n-w /sbin/rmmod -p x -k modules\n-w /sbin/modprobe -p x -k modules\n-a always,exit -F arch=b64 -S init_module,delete_module -F key=modules'
 
     diff <(echo -e $expected | sed 's/^\s*//') <(auditctl -l | grep $search_term) &>/dev/null && result="Pass"
     ## Tests End ##
@@ -1978,7 +1948,7 @@ test_5.2.11() {
     test_start_time="$(test_start $id)"
 
     state=0
-    good_macs="hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128- etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com"
+    good_macs="hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com"
     macs=$(awk '/^MACs / {print $2}' /etc/ssh/sshd_config | sed 's/,/ /g')
 
     ## Tests Start ##
@@ -2014,7 +1984,7 @@ test_5.2.12() {
     ## Tests Start ##
     if [ $(grep -c "^ClientAlive" /etc/ssh/sshd_config) -eq 2 ]; then
         [ $(grep "^ClientAliveInterval" /etc/ssh/sshd_config | awk '{print $2}') -le 300 ] || state=1
-        [ $(grep "^ClientAliveCountMax" /etc/ssh/sshd_config | awk '{print $2}') -eq 0 ] || state=1
+        [ $(grep "^ClientAliveCountMax" /etc/ssh/sshd_config | awk '{print $2}') -le 3 ] || state=1
     else
         state=1
     fi
@@ -2068,9 +2038,9 @@ test_5.3.1() {
     ## Tests Start ##
     ## Notes: Per the standard - Additional module options may be set, recommendation
     ##   requirements only cover including try_first_pass and minlen set to 14 or more.
-    [ "$(egrep -c "^password\s+requisite\s+pam_pwquality.so.*try_first_pass.*retry=3" /etc/pam.d/common-password)" -eq 1 ] || state=$(( $state + 1 ))
+    [ "$(egrep -c pam_pwquality.so /etc/pam.d/common-password)" -eq 1 ] || state=$(( $state + 1 ))
 
-    minlen="$(awk '/^(\s+)?minlen = / {print $3}' /etc/security/pwquality.conf)"
+    minlen="$(grep ^minlen /etc/security/pwquality.conf | cut -d '=' -f 2)"
     minlen=${minlen:=0}
     [ "$minlen" -ge 14 ] || state=$(( $state + 4 ))
 
@@ -2118,7 +2088,7 @@ test_5.3.4() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    [ $(egrep -c "^password\s+sufficient\s+pam_unix.so.*sha512" /etc/pam.d/common-password) -eq 1 ] || state=1
+    [ $(egrep -c '^password\s+(\S+\s+)+pam_unix\.so\s+(\S+\s+)*sha512' /etc/pam.d/common-password) -eq 1 ] || state=1
 
     [ $state -eq 0 ]&& result="Pass"
     ## Tests End ##
@@ -3053,13 +3023,13 @@ if [ $(is_test_included 6; echo $?) -eq 0 ]; then   write_cache "6,System Mainte
     if [ $(is_test_included 6.1; echo $?) -eq 0 ]; then   write_cache "6.1,System File Permissions"
         run_test 6.1.1 1 test_6.1.1   ## 6.1.1 Audit system file permissions (Not Scored)
         run_test 6.1.2 1 test_perms 644 /etc/passwd   ## 6.1.2 Ensure permissions on /etc/passwd are configured (Scored)
-        run_test 6.1.3 1 test_perms 000 /etc/shadow   ## 6.1.3 Ensure permissions on /etc/shadow are configured (Scored)
+        run_test 6.1.3 1 test_perms 640 /etc/shadow   ## 6.1.3 Ensure permissions on /etc/shadow are configured (Scored)
         run_test 6.1.4 1 test_perms 644 /etc/group   ## 6.1.4 Ensure permissions on /etc/group are configured (Scored)
-        run_test 6.1.5 1 test_perms 000 /etc/gshadow   ## 6.1.5 Ensure permissions on /etc/gshadow are configured (Scored)
+        run_test 6.1.5 1 test_perms 640 /etc/gshadow   ## 6.1.5 Ensure permissions on /etc/gshadow are configured (Scored)
         run_test 6.1.6 1 test_perms 644 /etc/passwd-   ## 6.1.6 Ensure permissions on /etc/passwd- are configured (Scored)
-        run_test 6.1.7 1 test_perms 000 /etc/shadow-   ## 6.1.7 Ensure permissions on /etc/shadow- are configured (Scored)
+        run_test 6.1.7 1 test_perms 640 /etc/shadow-   ## 6.1.7 Ensure permissions on /etc/shadow- are configured (Scored)
         run_test 6.1.8 1 test_perms 644 /etc/group-   ## 6.1.8 Ensure permissions on /etc/group- are configured (Scored)
-        run_test 6.1.9 1 test_perms 000 /etc/gshadow-   ## 6.1.9 Ensure permissions on /etc/gshadow- are configured (Scored)
+        run_test 6.1.9 1 test_perms 640 /etc/gshadow-   ## 6.1.9 Ensure permissions on /etc/gshadow- are configured (Scored)
         run_test 6.1.10 1 test_6.1.10   ## Ensure no world-writable files exist (Scored)
         run_test 6.1.11 1 test_6.1.11   ## Ensure no unowned files or directories exist (Scored)
         run_test 6.1.12 1 test_6.1.12   ## Ensure no ungrouped files or directories exist (Scored)
