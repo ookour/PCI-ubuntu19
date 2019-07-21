@@ -418,7 +418,7 @@ test_is_not_installed() {
     test_start_time=$(test_start $id)
 
     ## Tests Start ##
-    [ $(rpm -q $pkg &>/dev/null; echo $?) -eq 0 ] || result="Pass"
+    [ $(dpkg -s $pkg &>/dev/null; echo $?) -eq 0 ] || result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -591,20 +591,6 @@ test_1.2.2() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.2.3() {
-    id=$1
-    level=$2
-    description="Ensure gpgcheck is globally activated"
-    scored="Scored"
-    test_start_time=$(test_start $id)
-
-    ## Tests Start ##
-    [ $(grep -R ^gpgcheck=0 /etc/yum.conf /etc/yum.repos.d/ | wc -l) -eq 0 ] && result="Pass"
-    ## Tests End ##
-
-    duration="$(test_finish $id $test_start_time)ms"
-    write_result "$id,$description,$scored,$level,$result,$duration"
-}
 test_1.3.2() {
     id=$1
     level=$2
@@ -650,7 +636,7 @@ test_1.4.3() {
     state=0
     str='ExecStart=-/bin/sh -c "/usr/sbin/sulogin; /usr/bin/systemctl --fail --no-block default"'
 
-    [ $(grep grep ^root:[*\!]: /etc/shadow | wc -l) -ne 1 ]  || state=1
+    [ $(grep ^root:[*\!]: /etc/shadow | wc -l) -ne 1 ]  || state=1
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -739,7 +725,7 @@ test_1.6.1.1() {
     ## Tests Start ##
     state=0
 
-    [ $(grep "^\s+linux" /boot/grub2/grub.cfg | egrep 'apparmor=0' | wc -l) -eq 0 ] || state=1
+    [ $(grep "^\s+linux" /boot/grub/grub.cfg | egrep 'apparmor=0' | wc -l) -eq 0 ] || state=1
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -788,7 +774,7 @@ test_1.6.1.3() {
     ## Tests Start ##
 #    state=0
 
-#    [ "$(rpm -q setroubleshoot)" == "package setroubleshoot is not installed" ] || state=1
+#    [ "$(dpkg -s setroubleshoot)" == "package setroubleshoot is not installed" ] || state=1
 #    [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -805,7 +791,7 @@ test_1.6.1.3() {
     ## Tests Start ##
 #    state=0
 #
-#    [ "$(rpm -q mcstrans)" == "package mcstrans is not installed" ] || state=1
+#    [ "$(dpkg -s mcstrans)" == "package mcstrans is not installed" ] || state=1
 #    [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
 
@@ -895,7 +881,7 @@ test_1.7.2() {
     gdm_file="/etc/dconf/profile/gdm"
     banner_file="/etc/dconf/db/gdm.d/01-banner-message"
 
-    if [ "$(rpm -q gdm)" != "package gdm is not installed" ]; then
+    if [ $(dpkg -s xinetd &>/dev/null; echo $?) -eq 0 ] ; then
         if [ -f $file ]; then
             diff -qs $file <( echo -e "user-db:user\nsystem-db:gdm\nfile-db:/usr/share/gdm/greeter-dconf-defaults\n") || state=1
         else
@@ -997,7 +983,7 @@ test_2.2.1.1() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    [ $(rpm -q ntp &>/dev/null; echo $?) -eq 0 -o $(rpm -q chrony &>/dev/null; echo $?) -eq 0 ] && result="Pass"
+    [ $(dpkg -s ntp &>/dev/null; echo $?) -eq 0 -o $(dpkg -s chrony &>/dev/null; echo $?) -eq 0 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -1011,7 +997,7 @@ test_2.2.1.2() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    if [ $( rpm -q ntp &>/dev/null; echo $?) -eq 0 ]; then
+    if [ $( dpkg -s ntp &>/dev/null; echo $?) -eq 0 ]; then
         grep "^restrict -4 kod nomodify notrap nopeer noquery" /etc/ntpd.conf &>/dev/null || state=1
         grep "^restrict -6 kod nomodify notrap nopeer noquery" /etc/ntpd.conf &>/dev/null || state=2
         egrep "^(server|pool) .*$" /etc/ntpd.conf &>/dev/null || state=4
@@ -1037,7 +1023,7 @@ test_2.2.1.3() {
     state=0
 
     ## Tests Start ##
-    if [ $( rpm -q chrony &>/dev/null; echo $? ) -eq 0 ]; then
+    if [ $( dpkg -s chrony &>/dev/null; echo $? ) -eq 0 ]; then
         egrep "^(server|pool) .*$" /etc/chrony.conf &>/dev/null || state=$(( $state + 1 ))
 
         if [ -f /etc/sysconfig/chronyd ]; then
@@ -1065,7 +1051,7 @@ test_2.2.2() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    [ $(rpm -qa xorg-x11* &>/dev/null | wc -l) -eq 0 ] && result="Pass"
+    [ $(dpkg -sa xorg-x11* &>/dev/null | wc -l) -eq 0 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -1083,7 +1069,7 @@ test_2.2.x() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    if [ $(rpm -q $pkg &>/dev/null; echo $?) -eq 0 ]; then
+    if [ $(dpkg -s $pkg &>/dev/null; echo $?) -eq 0 ]; then
         [ $(systemctl is-enabled $service) != "disabled" ] && state=1
         [ $(netstat -tupln | egrep ":$port " | wc -l) -ne 0 ] && state=2
     fi
@@ -1102,12 +1088,12 @@ test_2.2.7() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    if [ $(rpm -q nfs-utils &>/dev/null; echo $?) -eq 0 ]; then
+    if [ $(dpkg -s nfs-utils &>/dev/null; echo $?) -eq 0 ]; then
         [ $(systemctl is-enabled nfs.service) == "disabled" ] || state=1
         [ $(systemctl is-enabled nfs-server.service) == "disabled" ] || state=1
         [ $(netstat -tupln | egrep ":2049 " | wc -l) -eq 0 ] || state=2
     fi
-    if [ $(rpm -q rpcbind &>/dev/null; echo $?) -eq 0 ]; then
+    if [ $(dpkg -s rpcbind &>/dev/null; echo $?) -eq 0 ]; then
         [ $(systemctl is-enabled rpcbind.socket) == "disabled" ] || state=4
         [ $(netstat -tupln | egrep ":111 " | wc -l) -eq 0 ] || state=8
     fi
@@ -1140,7 +1126,7 @@ test_2.2.17() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    if [ $(rpm -q rsh &>/dev/null; echo $?) -eq 0 ]; then
+    if [ $(dpkg -s rsh &>/dev/null; echo $?) -eq 0 ]; then
         [ $(systemctl is-enabled rsh.socket) == "disabled" ] && state=1
         [ $(netstat -tupln | egrep ":514 " | wc -l) -ne 0 ] && state=2
 
@@ -1231,8 +1217,8 @@ test_3.3.3() {
     state=1
     [ $(modprobe -c | grep -c 'options ipv6 disable=1') -eq 1 ] && state=0
 
-    linux_lines=$(grep -c "\s+linux" /boot/grub2/grub.cfg)
-    audit_lines=$(grep -c "\s+linux.*ipv6.disable=1" /boot/grub2/grub.cfg)
+    linux_lines=$(grep -c "\s+linux" /boot/grub/grub.cfg)
+    audit_lines=$(grep -c "\s+linux.*ipv6.disable=1" /boot/grub/grub.cfg)
     [ $linux_lines -eq $audit_lines ] && state=0
 
     [ $state -eq 0 ] && result="Pass"
@@ -1455,8 +1441,8 @@ test_4.1.3() {
     test_start_time=$(test_start $id)
 
     ## Tests Start ##
-    linux_lines=$(grep -c "\s+linux" /boot/grub2/grub.cfg)
-    audit_lines=$(grep -c "\s+linux.*audit=1" /boot/grub2/grub.cfg)
+    linux_lines=$(grep -c "\s+linux" /boot/grub/grub.cfg)
+    audit_lines=$(grep -c "\s+linux.*audit=1" /boot/grub/grub.cfg)
     [ $linux_lines -eq $audit_lines ] && result="Pass"
     ## Tests End ##
 
@@ -2277,7 +2263,7 @@ test_5.4.4() {
     state=0
 
     ## Tests Start ##
-    [ $(grep -c "umask 027" /etc/bashrc) -eq 1 ] || state=$(( $state + 1 ))
+    [ $(grep -c "umask 027" /etc/bash.bashrc) -eq 1 ] || state=$(( $state + 1 ))
     [ $(grep -c "umask 027" /etc/profile) -eq 1 ] || state=$(( $state + 2 ))
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
@@ -2313,7 +2299,8 @@ test_6.1.1() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    [ $(rpm -Va --nomtime --nosize --nomd5 --nolinkto | wc -l) -eq 0 ] || state=1
+    [ $(dpkg -S /bin/bash | wc -l) -eq 1 ] || state=1
+    [ "$(dpkg --verify bash)" == '??5?????? c /etc/bash.bashrc' ] || state=1
 
     [ $state -eq 0 ] && result="Pass"
     ## Tests End ##
@@ -2763,7 +2750,6 @@ if [ $(is_test_included 1; echo $?) -eq 0 ]; then   write_cache "1,Initial Setup
     if [ $(is_test_included 1.2; echo $?) -eq 0 ]; then   write_cache "1.2,Configure Software Updates"
         run_test 1.2.1 1 test_1.2.1   ## 1.2.1 Ensure package manager repositories are configured
         run_test 1.2.2 1 test_1.2.2   ## 1.2.2 Ensure GPG keys are configured
-        run_test 1.2.3 1 test_1.2.3   ## 1.2.3 Ensure gpgcheck is globally activated
     fi
 
     ## Section 1.3 - Filesystem Integrity Checking
@@ -2853,7 +2839,7 @@ if [ $(is_test_included 2; echo $?) -eq 0 ]; then   write_cache "2,Services"
         run_test 2.2.17 1 test_2.2.17   ## Ensure rsh server is not enabled (Scored)
         run_test 2.2.18 1 test_2.2.x telnet-server telnet.socket "23" telnet   ## Ensure telnet server is not enabled (Scored)
         run_test 2.2.19 1 test_2.2.x tftp-server tftp.socket "69" tfp   ## Ensure tftp server is not enabled (Scored)
-        run_test 2.2.20 1 test_2.2.x rsync rsyncd.service "873" rsync   ## Ensure rsync service is not enabled (Scored)
+        run_test 2.2.20 1 test_2.2.x rsync rsync.service "873" rsync   ## Ensure rsync service is not enabled (Scored)
         run_test 2.2.21 1 test_2.2.x talk-server ntalk.service "517" talk   ## Ensure talk server is not enabled (Scored)
     fi
     if [ $(is_test_included 2.3; echo $?) -eq 0 ]; then   write_cache "2.3,Service Clients"
@@ -2940,7 +2926,7 @@ if [ $(is_test_included 4; echo $?) -eq 0 ]; then   write_cache "4,Logging and A
     fi
     if [ $(is_test_included 4.2; echo $?) -eq 0 ]; then   write_cache "4.2,Configure Logging"
         if [ $(is_test_included 4.2.1; echo $?) -eq 0 ]; then
-            if [ $(rpm -q rsyslog &>/dev/null; echo $?) -eq 0 ]; then   write_cache "4.2.1,Configure rsyslog"
+            if [ $(dpkg -s rsyslog &>/dev/null; echo $?) -eq 0 ]; then   write_cache "4.2.1,Configure rsyslog"
                 run_test 4.2.1.1 1 test_is_enabled rsyslog.service rsyslog   ## 4.2.1.1 Ensure rsyslog service is enabled (Scored)
                 run_test 4.2.1.2 1 skip_test "Ensure logging is configured"   ## 4.2.1.2 Ensure logging is configured (Scored)
                 run_test 4.2.1.3 1 test_4.2.1.3   ## 4.2.1.3 Ensure rsyslog default file permissions configured (Scored)
@@ -2951,7 +2937,7 @@ if [ $(is_test_included 4; echo $?) -eq 0 ]; then   write_cache "4,Logging and A
             fi
         fi
         if [ $(is_test_included 4.2.2; echo $?) -eq 0 ]; then
-            if [ $(rpm -q syslog-ng &>/dev/null; echo $?) -eq 0 ]; then   write_cache "4.2.2,Configure syslog-ng"
+            if [ $(dpkg -s syslog-ng &>/dev/null; echo $?) -eq 0 ]; then   write_cache "4.2.2,Configure syslog-ng"
                 run_test 4.2.1.1 1 test_is_enabled syslog-ng.service syslog-ng   ## 4.2.2.1 Ensure syslog-ng service is enabled (Scored)
                 run_test 4.2.2.2 1 skip_test "Ensure logging is configured"   ## 4.2.2.2 Ensure logging is configured (Scored)
                 run_test 4.2.2.3 1 test_4.2.2.3   ## 4.2.1.3 Ensure syslog-ng default file permissions configured (Scored)
