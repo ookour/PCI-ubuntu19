@@ -531,7 +531,7 @@ test_1.1.x-check_removable() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.1.21() {
+test_1.1.20() {
     id=$1
     level=$2
     description="Ensure sticky bit is set on all world-writable dirs"
@@ -546,7 +546,7 @@ test_1.1.21() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.1.22() {
+test_1.1.21() {
     id=$1
     level=$2
     description="Disable Automounting"
@@ -715,7 +715,7 @@ test_1.5.4() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.6.1.1() {
+test_1.6.2.1() {
     id=$1
     level=$2
     description="Ensure APParmor is not disabled in bootloader configuration"
@@ -732,7 +732,7 @@ test_1.6.1.1() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.6.1.2() {
+test_1.6.2.2() {
     id=$1
     level=$2
     description="Ensure the APParmor state is enforcing"
@@ -749,10 +749,10 @@ test_1.6.1.2() {
     duration="$(test_finish $id $test_start_time)ms"
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
-test_1.6.1.3() {
+test_1.6.3() {
     id=$1
     level=$2
-    description="Ensure AppArmor policy is installed"
+    description="Ensure AppArmor is installed"
     scored="Scored"
     test_start_time=$(test_start $id)
 
@@ -927,13 +927,7 @@ test_2.1.x() {
     str=$(chkconfig --list 2>&1)
     state=0
 
-    dgram="$(chkconfig --list $service-dgram 2>/dev/null | awk '{print $2}')"
-    stream="$(chkconfig --list $service-stream 2>/dev/null | awk '{print $2}')"
-
-    if [ "$dgram" != "" -o "$stream" != "" ]; then
-        [ "$dgram" != "off" ] && state=1
-        [ "$stream" != "off" ] && state=1
-    fi
+    [ $(dpkg -s $service &>/dev/null; echo $?) -eq 1 ] && state=1
 
     [ $state -eq 0 ] && result=Pass
     ## Tests End ##
@@ -944,17 +938,12 @@ test_2.1.x() {
 test_2.1.6() {
     id=$1
     level=$2
-    description="Ensure tftp server is not enabled"
+    description="Ensure rsh is not enabled"
     scored="Scored"
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    state=0
-    str=$(chkconfig --list 2>&1)
-
-    [ "$(chkconfig --list 2>&1 | awk '/tftp/ {print $2}')" == "on" ] && state=1
-
-    [ $state -eq 0 ] && result=Pass
+    [ $(dpkg -s rsh &>/dev/null; echo $?) -eq 1 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -963,12 +952,72 @@ test_2.1.6() {
 test_2.1.7() {
     id=$1
     level=$2
+    description="Ensure talk is not enabled"
+    scored="Scored"
+    test_start_time="$(test_start $id)"
+
+    ## Tests Start ##
+    [ $(dpkg -s talk &>/dev/null; echo $?) -eq 1 ] && result="Pass"
+    ## Tests End ##
+
+    duration="$(test_finish $id $test_start_time)ms"
+    write_result "$id,$description,$scored,$level,$result,$duration"
+}
+test_2.1.8() {
+    id=$1
+    level=$2
+    description="Ensure telnet is not enabled"
+    scored="Scored"
+    test_start_time="$(test_start $id)"
+
+    ## Tests Start ##
+    [ $(dpkg -s telnet &>/dev/null; echo $?) -eq 1 ] && result="Pass"
+    ## Tests End ##
+
+    duration="$(test_finish $id $test_start_time)ms"
+    write_result "$id,$description,$scored,$level,$result,$duration"
+}
+test_2.1.9() {
+    id=$1
+    level=$2
+    description="Ensure tftp server is not enabled"
+    scored="Scored"
+    test_start_time="$(test_start $id)"
+
+    ## Tests Start ##
+    state=0
+
+    [ $(dpkg -s xinetd &>/dev/null; echo $?) -eq 1 ] && state=1
+
+    [ $state -eq 0 ] && result=Pass
+    ## Tests End ##
+
+    duration="$(test_finish $id $test_start_time)ms"
+    write_result "$id,$description,$scored,$level,$result,$duration"
+}
+test_2.1.10() {
+    id=$1
+    level=$2
     description="Ensure xinetd is not enabled"
     scored="Scored"
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
     [ $(dpkg -s xinetd &>/dev/null; echo $?) -eq 1 ] && result="Pass"
+    ## Tests End ##
+
+    duration="$(test_finish $id $test_start_time)ms"
+    write_result "$id,$description,$scored,$level,$result,$duration"
+}
+test_2.1.11() {
+    id=$1
+    level=$2
+    description="Ensure openbsd-inetd is not installed"
+    scored="Scored"
+    test_start_time="$(test_start $id)"
+
+    ## Tests Start ##
+    [ $(dpkg -s openbsd-inetd &>/dev/null; echo $?) -eq 1 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -2272,6 +2321,24 @@ test_5.4.4() {
     write_result "$id,$description,$scored,$level,$result,$duration"
 }
 
+test_5.4.5() {
+    id=$1
+    level=$2
+    description="Ensure default user shell timeout is 900 seconds or less"
+    scored="Scored"
+    test_start_time="$(test_start $id)"
+    state=0
+
+    ## Tests Start ##
+    [ $(grep -c "TMOUT=600" /etc/bash.bashrc) -eq 1 ] || state=$(( $state + 1 ))
+    [ $(grep -c "TMOUT=600" /etc/profile) -eq 1 ] || state=$(( $state + 2 ))
+    [ $state -eq 0 ] && result="Pass"
+    ## Tests End ##
+
+    duration="$(test_finish $id $test_start_time)ms"
+    write_result "$id,$description,$scored,$level,$result,$duration"
+}
+
 test_5.6() {
     id=$1
     level=$2
@@ -2726,24 +2793,23 @@ if [ $(is_test_included 1; echo $?) -eq 0 ]; then   write_cache "1,Initial Setup
         run_test 1.1.2 2 test_1.1.x-check_partition /tmp   ## 1.1.2 Ensure separate partition exists for /tmp
         run_test 1.1.3 1 test_1.1.x-check_fs_opts /tmp nodev   ## 1.1.3 Ensure nodev option set on /tmp
         run_test 1.1.4 1 test_1.1.x-check_fs_opts /tmp nosuid   ## 1.1.4 Ensure nosuid option set on /tmp
-        run_test 1.1.5 1 test_1.1.x-check_fs_opts /tmp noexec   ## 1.1.5 Ensure noexec option set on /tmp
-        run_test 1.1.6 2 test_1.1.x-check_partition /var   ## 1.1.6 Ensure separate partition exists for /var
-        run_test 1.1.7 2 test_1.1.x-check_partition /var/tmp   ## 1.1.7 Ensure separate partition exists for /var/tmp
-        run_test 1.1.8 1 test_1.1.x-check_fs_opts /var/tmp nodev   ## 1.1.8 Ensure nodev option set on /var/tmp
-        run_test 1.1.9 1 test_1.1.x-check_fs_opts /var/tmp nosuid   ## 1.1.9 Ensure nosuid option set on /var/tmp
-        run_test 1.1.10 1 test_1.1.x-check_fs_opts /var/tmp noexec   ## 1.1.10 Ensure noexec option set on /var/tmp
-        run_test 1.1.11 2 test_1.1.x-check_partition /var/log   ## 1.1.11 Ensure separate partition exists for /var/log
-        run_test 1.1.12 2 test_1.1.x-check_partition /var/log/audit   ## 1.1.12 Ensure separate partition exists for /var/log/audit
-        run_test 1.1.13 2 test_1.1.x-check_partition /home   ## 1.1.13 Ensure separate partition exists for /home
-        run_test 1.1.14 1 test_1.1.x-check_fs_opts /home nodev   ## 1.1.14 Ensure nodev option set on /home
-        run_test 1.1.15 1 test_1.1.x-check_fs_opts /dev/shm nodev   ## 1.1.15 Ensure nodev option set on /dev/shm
-        run_test 1.1.16 1 test_1.1.x-check_fs_opts /dev/shm nosuid   ## 1.1.16 Ensure nosuid option set on /dev/shm
-        run_test 1.1.17 1 test_1.1.x-check_fs_opts /dev/shm noexec   ## 1.1.17 Ensure noexec option set on /dev/shm
-        run_test 1.1.18 1 test_1.1.x-check_removable nodev  ## 1.1.18 Ensure nodev option set on removable media partitions
-        run_test 1.1.19 1 test_1.1.x-check_removable nosuid  ## 1.1.19 Ensure nosuid option set on removable media partitions
-        run_test 1.1.20 1 test_1.1.x-check_removable noexec  ## 1.1.20 Ensure noexec option set on removable media partitions
-        run_test 1.1.21 1 test_1.1.21   ## 1.1.21 Ensure Sticky bit is set on all world-writable dirs
-        run_test 1.1.22 1 test_1.1.22   ## 1.1.22 Disable Automounting
+        run_test 1.1.5 2 test_1.1.x-check_partition /var   ## 1.1.5 Ensure separate partition exists for /var
+        run_test 1.1.6 2 test_1.1.x-check_partition /var/tmp   ## 1.1.6 Ensure separate partition exists for /var/tmp
+        run_test 1.1.7 1 test_1.1.x-check_fs_opts /var/tmp nodev   ## 1.1.7 Ensure nodev option set on /var/tmp
+        run_test 1.1.8 1 test_1.1.x-check_fs_opts /var/tmp nosuid   ## 1.1.8 Ensure nosuid option set on /var/tmp
+        run_test 1.1.9 1 test_1.1.x-check_fs_opts /var/tmp noexec   ## 1.1.9 Ensure noexec option set on /var/tmp
+        run_test 1.1.10 2 test_1.1.x-check_partition /var/log   ## 1.1.10 Ensure separate partition exists for /var/log
+        run_test 1.1.11 2 test_1.1.x-check_partition /var/log/audit   ## 1.1.11 Ensure separate partition exists for /var/log/audit
+        run_test 1.1.12 2 test_1.1.x-check_partition /home   ## 1.1.12 Ensure separate partition exists for /home
+        run_test 1.1.13 1 test_1.1.x-check_fs_opts /home nodev   ## 1.1.13 Ensure nodev option set on /home
+        run_test 1.1.14 1 test_1.1.x-check_fs_opts /dev/shm nodev   ## 1.1.14 Ensure nodev option set on /dev/shm
+        run_test 1.1.15 1 test_1.1.x-check_fs_opts /dev/shm nosuid   ## 1.1.15 Ensure nosuid option set on /dev/shm
+        run_test 1.1.16 1 test_1.1.x-check_fs_opts /dev/shm noexec   ## 1.1.16 Ensure noexec option set on /dev/shm
+        run_test 1.1.17 1 test_1.1.x-check_removable nodev  ## 1.1.17 Ensure nodev option set on removable media partitions
+        run_test 1.1.18 1 test_1.1.x-check_removable nosuid  ## 1.1.18 Ensure nosuid option set on removable media partitions
+        run_test 1.1.19 1 test_1.1.x-check_removable noexec  ## 1.1.19 Ensure noexec option set on removable media partitions
+        run_test 1.1.20 1 test_1.1.20   ## 1.1.20 Ensure Sticky bit is set on all world-writable dirs
+        run_test 1.1.21 1 test_1.1.21   ## 1.1.21 Disable Automounting
     fi
 
     ## Section 1.2 - Configure Software Updates
@@ -2778,12 +2844,9 @@ if [ $(is_test_included 1; echo $?) -eq 0 ]; then   write_cache "1,Initial Setup
     ## Section 1.6 - Mandatory Access Control
     if [ $(is_test_included 1.6; echo $?) -eq 0 ]; then   write_cache "1.6,Mandatory Access Control"
         if [ $(is_test_included 1.6.1; echo $?) -eq 0 ]; then   write_cache "1.6.1,Configure SELinux"
-            run_test 1.6.1.1 2 test_1.6.1.1   ## 1.6.1.1 Ensure SELinux is not disabled in bootloader configuration
-            run_test 1.6.1.2 2 test_1.6.1.2   ## 1.6.1.2 Ensure the SELinux state is enforcing
-            run_test 1.6.1.3 2 test_1.6.1.3   ## 1.6.1.3 Ensure SELinux policy is configured
-#            run_test 1.6.1.4 2 test_1.6.1.4   ## 1.6.1.4 Ensure SETroubleshoot is not installed
-#            run_test 1.6.1.5 2 test_1.6.1.5   ## 1.6.1.5 Ensure MCS Translation Service (mcstrans) is not installed
-            run_test 1.6.1.6 2 test_1.6.1.6   ## 1.6.1.5 Ensure no unconfined daemons exist
+            run_test 1.6.2.1 2 test_1.6.2.1   ## 1.6.2.1 Ensure APParmor is not disabled in bootloader configuration
+            run_test 1.6.2.2 2 test_1.6.2.2   ## 1.6.2.2 Ensure the APParmor state is enforcing
+            run_test 1.6.3 2 test_1.6.3   ## 1.6.3 Ensure APParmor is installed
         fi
         run_test 1.6.2 2 test_is_installed libselinux SELinux   ## 1.6.2 Ensure SELinux is installed
     fi
@@ -2809,11 +2872,15 @@ if [ $(is_test_included 2; echo $?) -eq 0 ]; then   write_cache "2,Services"
     if [ $(is_test_included 2.1; echo $?) -eq 0 ]; then   write_cache "2.1,inetd Services"
         run_test 2.1.1 1 test_2.1.x chargen   ## Ensure chargen services are not enabled (Scored)
         run_test 2.1.2 1 test_2.1.x daytime   ## Ensure daytime services are not enabled (Scored)
-        run_test 2.1.3 1 test_2.1.x discord   ## Ensure discord services are not enabled (Scored)
+        run_test 2.1.3 1 test_2.1.x discard   ## Ensure discard services are not enabled (Scored)
         run_test 2.1.4 1 test_2.1.x echo   ## Ensure echo services are not enabled (Scored)
         run_test 2.1.5 1 test_2.1.x time   ## Ensure time services are not enabled (Scored)
-        run_test 2.1.6 1 test_2.1.6   ## Ensure tftp is not enabled (Scored)
-        run_test 2.1.7 1 test_2.1.7   ## Ensure xinetd is not enabled (Scored)
+        run_test 2.1.6 1 test_2.1.6   ## Ensure rsh is not enabled (Scored)
+        run_test 2.1.7 1 test_2.1.7   ## Ensure talk is not enabled (Scored)
+        run_test 2.1.8 1 test_2.1.8   ## Ensure telnet is not enabled (Scored)
+        run_test 2.1.9 1 test_2.1.9   ## Ensure tftp is not enabled (Scored)
+        run_test 2.1.10 1 test_2.1.10   ## Ensure xinetd is not enabled (Scored)
+        run_test 2.1.11 1 test_2.1.11  ## Ensure openbsd-inetd is not enabled (Scored)
     fi
     if [ $(is_test_included 2.2; echo $?) -eq 0 ]; then   write_cache "2.2,Special Purpose Services"
         if [ $(is_test_included 2.2.1; echo $?) -eq 0 ]; then   write_cache "2.2.1,Time Synchronisation"
@@ -2835,12 +2902,13 @@ if [ $(is_test_included 2; echo $?) -eq 0 ]; then   write_cache "2,Services"
         run_test 2.2.13 1 test_2.2.x squid squid.service "3128|:80|:443" HTTP Proxy   ## 2.2.13 Ensure HTTP Proxy Server is not enabled (Scored)
         run_test 2.2.14 1 test_2.2.x net-snmp snmpd.service "161" SNMP   ## 2.2.14 Ensure SNMP Server is not enabled (Scored)
         run_test 2.2.15 1 test_2.2.15   ## Ensure mail transfer agent is configured for local-only mode (Scored)
-        run_test 2.2.16 1 test_2.2.x ypserv ypserv.service "789" NIS   ## Ensure NIS Server is not enabled (Scored)
-        run_test 2.2.17 1 test_2.2.17   ## Ensure rsh server is not enabled (Scored)
-        run_test 2.2.18 1 test_2.2.x telnet-server telnet.socket "23" telnet   ## Ensure telnet server is not enabled (Scored)
-        run_test 2.2.19 1 test_2.2.x tftp-server tftp.socket "69" tfp   ## Ensure tftp server is not enabled (Scored)
-        run_test 2.2.20 1 test_2.2.x rsync rsync.service "873" rsync   ## Ensure rsync service is not enabled (Scored)
-        run_test 2.2.21 1 test_2.2.x talk-server ntalk.service "517" talk   ## Ensure talk server is not enabled (Scored)
+        run_test 2.2.16 1 test_2.2.x rsync rsync.service "873" rsync   ## Ensure rsync service is not enabled (Scored)
+        run_test 2.2.17 1 test_2.2.x ypserv ypserv.service "789" NIS   ## Ensure NIS Server is not enabled (Scored)
+#        run_test 2.2.17 1 test_2.2.17   ## Ensure rsh server is not enabled (Scored)
+#        run_test 2.2.18 1 test_2.2.x telnet-server telnet.socket "23" telnet   ## Ensure telnet server is not enabled (Scored)
+#        run_test 2.2.19 1 test_2.2.x tftp-server tftp.socket "69" tfp   ## Ensure tftp server is not enabled (Scored)
+#        run_test 2.2.20 1 test_2.2.x rsync rsync.service "873" rsync   ## Ensure rsync service is not enabled (Scored)
+#        run_test 2.2.21 1 test_2.2.x talk-server ntalk.service "517" talk   ## Ensure talk server is not enabled (Scored)
     fi
     if [ $(is_test_included 2.3; echo $?) -eq 0 ]; then   write_cache "2.3,Service Clients"
         run_test 2.3.1 1 test_2.3.x ypbind NIS   ### 2.3.1 Ensure NIS Client is not installed (Scored)
@@ -2999,6 +3067,7 @@ if [ $(is_test_included 5; echo $?) -eq 0 ]; then   write_cache "5,Access Authen
         run_test 5.4.2 1 test_5.4.2   ## 5.4.2 Ensure system accounts are non-login (Scored)
         run_test 5.4.3 1 test_5.4.3   ## 5.4.2 Ensure default group for the root account is GID 0 (Scored)
         run_test 5.4.4 1 test_5.4.4   ## 5.4.3 Ensure default user umask is 027 or more restrictive (Scored)
+        run_test 5.4.5 1 test_5.4.5   ## 5.4.5 Ensure default user shell timeout is 900 second or less (Scored)
     fi
     run_test 5.5 1 skip_test "Ensure root login is restricted to system console"   ## 5.5 Ensure root login is restricted to system console (Not Scored)
     run_test 5.6 1 test_5.6   ## 5.6 Ensure access to the su command is restricted (Scored)
