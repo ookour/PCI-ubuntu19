@@ -16,7 +16,7 @@ mount -o remount,nosuid /var/tmp
 mount -o remount,noexec /var/tmp
 mount -o remount,nodev /home
 mount -o remount,noexec /dev/shm
-
+systemctl disable rsync
 
 debconf-set-selections <<< "postfix postfix/mailname string your.hostname.com"
 debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
