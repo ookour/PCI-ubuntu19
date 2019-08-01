@@ -9,6 +9,14 @@ echo "install squashfs /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install udf /bin/true" >> /etc/modprobe.d/CIS.conf
 echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
 
+mount -o remount,nodev /tmp
+mount -o remount,nosuid /tmp
+mount -o remount,nodev /var/tmp
+mount -o remount,nosuid /var/tmp
+mount -o remount,noexec /var/tmp
+mount -o remount,nodev /home
+mount -o remount,noexec /dev/shm
+
 
 debconf-set-selections <<< "postfix postfix/mailname string your.hostname.com"
 debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
