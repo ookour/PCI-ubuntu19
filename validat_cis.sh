@@ -926,9 +926,8 @@ test_2.1.x() {
     ## Tests Start ##
     state=0
 
-    [ $(dpkg -s $service &>/dev/null; echo $?) -eq 1 ] || state=1
-
-    [ $state -eq 0 ] && result=Pass
+    [ $(dpkg -s $service &>/dev/null; echo $?) -eq 1 ] && result="Pass"
+    
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
@@ -985,10 +984,7 @@ test_2.1.9() {
 
     ## Tests Start ##
     state=0
-
-    [ $(dpkg -s xinetd &>/dev/null; echo $?) -eq 1 ] && state=1
-
-    [ $state -eq 0 ] && result=Pass
+    [ $(dpkg -s tftp &>/dev/null; echo $?) -eq 1 ] && result="Pass"
     ## Tests End ##
 
     duration="$(test_finish $id $test_start_time)ms"
