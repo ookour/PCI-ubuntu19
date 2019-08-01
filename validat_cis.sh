@@ -924,10 +924,9 @@ test_2.1.x() {
     test_start_time="$(test_start $id)"
 
     ## Tests Start ##
-    str=$(chkconfig --list 2>&1)
     state=0
 
-    [ $(dpkg -s $service &>/dev/null; echo $?) -eq 1 ] && state=1
+    [ $(dpkg -s $service &>/dev/null; echo $?) -eq 1 ] || state=1
 
     [ $state -eq 0 ] && result=Pass
     ## Tests End ##
